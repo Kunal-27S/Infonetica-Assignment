@@ -30,7 +30,6 @@ app.MapPost("/definitions", async (WorkflowDefinition definition, WorkflowServic
         return Results.Ok(new 
         { 
             success = true,
-            message = "Workflow definition created successfully",
             data = definition
         });
     }
@@ -61,12 +60,20 @@ app.MapGet("/definitions/{id}", async (string id, WorkflowService service) =>
 app.MapGet("/definitions", async (WorkflowService service) =>
 {
     var definitions = service.GetAllWorkflowDefinitions();
+    var definitionsList = definitions.Select(d => new
+    {
+        id = d.Id,
+        name = d.Name,
+        states = d.States,
+        actions = d.Actions
+    }).ToList();
+
     return Results.Ok(new { 
         success = true,
         data = new 
         {
             count = definitions.Count(),
-            definitions = definitions
+            definitions = definitionsList
         }
     });
 });
@@ -79,7 +86,6 @@ app.MapPost("/instances/{definitionId}", async (string definitionId, WorkflowSer
     {
         return Results.Ok(new {
             success = true,
-            message = "Workflow instance created successfully",
             data = instance
         });
     }
@@ -96,7 +102,6 @@ app.MapPost("/instances/{instanceId}/actions/{actionId}", async (string instance
     if (service.ExecuteAction(instanceId, actionId, out var error))
         return Results.Ok(new { 
             success = true,
-            message = "Action executed successfully",
             data = new
             {
                 instanceId = instanceId,
@@ -130,15 +135,22 @@ app.MapGet("/instances/{instanceId}", async (string instanceId, WorkflowService 
 app.MapGet("/instances", async (WorkflowService service) =>
 {
     var instances = service.GetAllInstances();
+    var instancesList = instances.Select(i => new
+    {
+        id = i.Id,
+        definitionId = i.DefinitionId,
+        currentState = i.CurrentState,
+        history = i.History
+    }).ToList();
+
     return Results.Ok(new { 
         success = true,
         data = new { 
             count = instances.Count(),
-            instances = instances
+            instances = instancesList
         }
     });
 });
 
 app.Run();
-
 
