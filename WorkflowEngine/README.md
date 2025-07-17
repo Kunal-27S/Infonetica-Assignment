@@ -4,6 +4,14 @@ A simple API backend for modeling workflows as state machines.
 
 ## Getting Started
 
+You can run this project in two ways:
+
+### 1. Using Visual Studio
+1. Open `Infonetica Assignment.sln` in Visual Studio
+2. Press F5 or click "Start" to run the project
+3. The API will be available at http://localhost:5092
+
+### 2. Using Command Line
 1. Build and run the project:
    ```bash
    dotnet build
