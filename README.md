@@ -12,7 +12,7 @@ You can run this project in two ways:
 3. The API will be available at http://localhost:5092
 
 ### 2. Using Command Line
-1. Build and run the project:
+1. Build and run the project in the WorkflowEngine directory:
    ```bash
    dotnet build
    dotnet run
