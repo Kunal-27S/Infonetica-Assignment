@@ -1,4 +1,4 @@
-# Workflow Engine API
+# Configurable Workflow Engine API
 
 A simple API backend for modeling workflows as state machines.
 
