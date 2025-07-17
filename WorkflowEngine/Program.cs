@@ -9,61 +9,134 @@ builder.Services.AddSingleton<WorkflowService>();
 
 var app = builder.Build();
 
-//  Health check
-app.MapGet("/", () => "Workflow Engine is running.");
+// Enable JSON response formatting
+app.Use(async (context, next) =>
+{
+    context.Response.ContentType = "application/json";
+    await next();
+});
 
-//  Create new workflow definition
-app.MapPost("/definitions", (WorkflowDefinition definition, WorkflowService service) =>
+// Health check
+app.MapGet("/", () => Results.Ok(new { message = "Workflow Engine is running." }));
+
+// Create new workflow definition
+app.MapPost("/definitions", async (WorkflowDefinition definition, WorkflowService service) =>
 {
     if (string.IsNullOrWhiteSpace(definition.Id))
-        return Results.BadRequest("Workflow definition must have an Id.");
+        return Results.BadRequest(new { error = "Workflow definition must have an Id." });
 
     if (service.AddWorkflowDefinition(definition, out var error))
-        return Results.Ok(definition);
+    {
+        return Results.Ok(new 
+        { 
+            success = true,
+            message = "Workflow definition created successfully",
+            data = definition
+        });
+    }
 
-    return Results.BadRequest(error);
+    return Results.BadRequest(new { 
+        success = false,
+        error = error 
+    });
 });
 
 // Get workflow definition by ID
-app.MapGet("/definitions/{id}", (string id, WorkflowService service) =>
+app.MapGet("/definitions/{id}", async (string id, WorkflowService service) =>
 {
     var definition = service.GetWorkflowDefinition(id);
-    return definition is not null ? Results.Ok(definition) : Results.NotFound("Definition not found.");
+    if (definition is not null)
+        return Results.Ok(new { 
+            success = true,
+            data = definition
+        });
+    
+    return Results.NotFound(new { 
+        success = false,
+        error = "Definition not found." 
+    });
 });
 
-//  List all workflow definitions
-app.MapGet("/definitions", (WorkflowService service) =>
+// List all workflow definitions
+app.MapGet("/definitions", async (WorkflowService service) =>
 {
-    return Results.Ok(service.GetAllWorkflowDefinitions());
+    var definitions = service.GetAllWorkflowDefinitions();
+    return Results.Ok(new { 
+        success = true,
+        data = new 
+        {
+            count = definitions.Count(),
+            definitions = definitions
+        }
+    });
 });
 
 // Start new workflow instance
-app.MapPost("/instances/{definitionId}", (string definitionId, WorkflowService service) =>
+app.MapPost("/instances/{definitionId}", async (string definitionId, WorkflowService service) =>
 {
     var instance = service.StartInstance(definitionId);
-    return instance is not null ? Results.Ok(instance) : Results.BadRequest("Workflow definition not found or no initial state.");
+    if (instance is not null)
+    {
+        return Results.Ok(new {
+            success = true,
+            message = "Workflow instance created successfully",
+            data = instance
+        });
+    }
+    
+    return Results.BadRequest(new { 
+        success = false,
+        error = "Workflow definition not found or no initial state." 
+    });
 });
 
 // Execute action on instance
-app.MapPost("/instances/{instanceId}/actions/{actionId}", (string instanceId, string actionId, WorkflowService service) =>
+app.MapPost("/instances/{instanceId}/actions/{actionId}", async (string instanceId, string actionId, WorkflowService service) =>
 {
     if (service.ExecuteAction(instanceId, actionId, out var error))
-        return Results.Ok();
+        return Results.Ok(new { 
+            success = true,
+            message = "Action executed successfully",
+            data = new
+            {
+                instanceId = instanceId,
+                actionId = actionId
+            }
+        });
 
-    return Results.BadRequest(error);
+    return Results.BadRequest(new { 
+        success = false,
+        error = error 
+    });
 });
 
 // Get instance by ID
-app.MapGet("/instances/{instanceId}", (string instanceId, WorkflowService service) =>
+app.MapGet("/instances/{instanceId}", async (string instanceId, WorkflowService service) =>
 {
     var instance = service.GetInstance(instanceId);
-    return instance is not null ? Results.Ok(instance) : Results.NotFound("Instance not found.");
+    if (instance is not null)
+        return Results.Ok(new { 
+            success = true,
+            data = instance
+        });
+    
+    return Results.NotFound(new { 
+        success = false,
+        error = "Instance not found." 
+    });
 });
 
-//List all instances
-app.MapGet("/instances", (WorkflowService service) =>
+// List all instances
+app.MapGet("/instances", async (WorkflowService service) =>
 {
-    return Results.Ok(service.GetAllInstances());
+    var instances = service.GetAllInstances();
+    return Results.Ok(new { 
+        success = true,
+        data = new { 
+            count = instances.Count(),
+            instances = instances
+        }
+    });
 });
 
 app.Run();

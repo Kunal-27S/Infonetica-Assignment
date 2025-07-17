@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\KUNAL MANDAL\\Desktop\\Infonetica Assignment\\WorkflowEngine\\WorkflowEngine.csproj": {}
+    "C:\\Users\\KUNAL MANDAL\\Desktop\\Infonetica-Assignment\\Infonetica-Master\\WorkflowEngine\\WorkflowEngine.csproj": {}
   },
   "projects": {
-    "C:\\Users\\KUNAL MANDAL\\Desktop\\Infonetica Assignment\\WorkflowEngine\\WorkflowEngine.csproj": {
+    "C:\\Users\\KUNAL MANDAL\\Desktop\\Infonetica-Assignment\\Infonetica-Master\\WorkflowEngine\\WorkflowEngine.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\KUNAL MANDAL\\Desktop\\Infonetica Assignment\\WorkflowEngine\\WorkflowEngine.csproj",
+        "projectUniqueName": "C:\\Users\\KUNAL MANDAL\\Desktop\\Infonetica-Assignment\\Infonetica-Master\\WorkflowEngine\\WorkflowEngine.csproj",
         "projectName": "WorkflowEngine",
-        "projectPath": "C:\\Users\\KUNAL MANDAL\\Desktop\\Infonetica Assignment\\WorkflowEngine\\WorkflowEngine.csproj",
+        "projectPath": "C:\\Users\\KUNAL MANDAL\\Desktop\\Infonetica-Assignment\\Infonetica-Master\\WorkflowEngine\\WorkflowEngine.csproj",
         "packagesPath": "C:\\Users\\KUNAL MANDAL\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\KUNAL MANDAL\\Desktop\\Infonetica Assignment\\WorkflowEngine\\obj\\",
+        "outputPath": "C:\\Users\\KUNAL MANDAL\\Desktop\\Infonetica-Assignment\\Infonetica-Master\\WorkflowEngine\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\KUNAL MANDAL\\AppData\\Roaming\\NuGet\\NuGet.Config"
