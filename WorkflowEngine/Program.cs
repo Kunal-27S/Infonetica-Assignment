@@ -1,127 +1,71 @@
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Hosting;
+
+using WorkflowEngine.Models;
+using WorkflowEngine.Services;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Register WorkflowService as singleton
+builder.Services.AddSingleton<WorkflowService>();
+
 var app = builder.Build();
 
-var definitions = new Dictionary<string, WorkflowDefinition>();
-var instances = new Dictionary<string, WorkflowInstance>();
-
-// ✅ Health check
+//  Health check
 app.MapGet("/", () => "Workflow Engine is running.");
 
-// ✅ Create a new workflow definition
-app.MapPost("/definitions", (WorkflowDefinition definition) =>
+//  Create new workflow definition
+app.MapPost("/definitions", (WorkflowDefinition definition, WorkflowService service) =>
 {
-    if (definitions.ContainsKey(definition.Id))
-        return Results.BadRequest("Definition ID already exists.");
+    if (string.IsNullOrWhiteSpace(definition.Id))
+        return Results.BadRequest("Workflow definition must have an Id.");
 
-    if (definition.States.Count(s => s.IsInitial) != 1)
-        return Results.BadRequest("There must be exactly one initial state.");
+    if (service.AddWorkflowDefinition(definition, out var error))
+        return Results.Ok(definition);
 
-    definitions[definition.Id] = definition;
-    return Results.Ok("Definition created.");
+    return Results.BadRequest(error);
 });
 
-// ✅ Get all workflow definitions
-app.MapGet("/definitions", () =>
+// Get workflow definition by ID
+app.MapGet("/definitions/{id}", (string id, WorkflowService service) =>
 {
-    return Results.Ok(definitions.Values);
+    var definition = service.GetWorkflowDefinition(id);
+    return definition is not null ? Results.Ok(definition) : Results.NotFound("Definition not found.");
 });
 
-// ✅ Get a single workflow definition
-app.MapGet("/definitions/{id}", (string id) =>
+//  List all workflow definitions
+app.MapGet("/definitions", (WorkflowService service) =>
 {
-    return definitions.TryGetValue(id, out var def)
-        ? Results.Ok(def)
-        : Results.NotFound("Definition not found.");
+    return Results.Ok(service.GetAllWorkflowDefinitions());
 });
 
-// ✅ Start workflow instance
-app.MapPost("/instances", (StartInstanceRequest request) =>
+// Start new workflow instance
+app.MapPost("/instances/{definitionId}", (string definitionId, WorkflowService service) =>
 {
-    if (!definitions.ContainsKey(request.DefinitionId))
-        return Results.NotFound("Definition not found.");
-
-    var def = definitions[request.DefinitionId];
-    var initialState = def.States.First(s => s.IsInitial);
-
-    var instance = new WorkflowInstance
-    {
-        Id = Guid.NewGuid().ToString(),
-        DefinitionId = def.Id,
-        CurrentStateId = initialState.Id,
-        History = new List<ExecutionRecord>()
-    };
-
-    instances[instance.Id] = instance;
-    return Results.Ok(instance);
+    var instance = service.StartInstance(definitionId);
+    return instance is not null ? Results.Ok(instance) : Results.BadRequest("Workflow definition not found or no initial state.");
 });
 
-// ✅ Get all workflow instances
-app.MapGet("/instances", () =>
+// Execute action on instance
+app.MapPost("/instances/{instanceId}/actions/{actionId}", (string instanceId, string actionId, WorkflowService service) =>
 {
-    return Results.Ok(instances.Values);
+    if (service.ExecuteAction(instanceId, actionId, out var error))
+        return Results.Ok();
+
+    return Results.BadRequest(error);
 });
 
-// ✅ Get instance status
-app.MapGet("/instances/{id}", (string id) =>
+// Get instance by ID
+app.MapGet("/instances/{instanceId}", (string instanceId, WorkflowService service) =>
 {
-    return instances.TryGetValue(id, out var inst)
-        ? Results.Ok(inst)
-        : Results.NotFound("Instance not found.");
+    var instance = service.GetInstance(instanceId);
+    return instance is not null ? Results.Ok(instance) : Results.NotFound("Instance not found.");
 });
 
-// ✅ Execute action on an instance
-app.MapPost("/instances/{id}/execute", (string id, ExecuteActionRequest request) =>
+//List all instances
+app.MapGet("/instances", (WorkflowService service) =>
 {
-    if (!instances.TryGetValue(id, out var instance))
-        return Results.NotFound("Instance not found.");
-
-    var def = definitions[instance.DefinitionId];
-    var action = def.Actions.FirstOrDefault(a => a.Id == request.ActionId);
-
-    if (action == null || !action.Enabled)
-        return Results.BadRequest("Invalid or disabled action.");
-
-    if (!action.FromStates.Contains(instance.CurrentStateId))
-        return Results.BadRequest("Action not valid from current state.");
-
-    if (!def.States.Any(s => s.Id == action.ToState))
-        return Results.BadRequest("Target state does not exist.");
-
-    var current = def.States.First(s => s.Id == instance.CurrentStateId);
-    if (current.IsFinal)
-        return Results.BadRequest("Cannot act from a final state.");
-
-    instance.CurrentStateId = action.ToState;
-    instance.History.Add(new ExecutionRecord { ActionId = action.Id, Timestamp = DateTime.UtcNow });
-
-    return Results.Ok(instance);// 
+    return Results.Ok(service.GetAllInstances());
 });
 
 app.Run();
 
 
-// --- Data Models ---
-record State(string Id, string Name, bool IsInitial, bool IsFinal, bool Enabled);
-record ActionDef(string Id, string Name, bool Enabled, List<string> FromStates, string ToState);
-record WorkflowDefinition(string Id, string Name, List<State> States, List<ActionDef> Actions);
-
-record WorkflowInstance
-{
-    public required string Id { get; set; }
-    public required string DefinitionId { get; set; }
-    public required string CurrentStateId { get; set; }
-    public required List<ExecutionRecord> History { get; set; }
-}
-
-record ExecutionRecord
-{
-    public required string ActionId { get; set; }
-    public required DateTime Timestamp { get; set; }
-}
-
-record StartInstanceRequest(string DefinitionId);
-record ExecuteActionRequest(string ActionId);
